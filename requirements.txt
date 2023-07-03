@@ -2,3 +2,4 @@ hikvisionapi
 pytelegrambotapi
 python_dotenv
 aiohttp
+anyio[trio]

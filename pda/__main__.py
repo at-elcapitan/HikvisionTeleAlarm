@@ -22,10 +22,13 @@ class EnvironmentError(Exception):
         super().__init__(f'Can`t import global variables. Maybe .env file corrupted or filled incorrectly.')
 
 
-def main():
-    aclient = hikv.Client(HOST, LOGIN, PASSWD, timeout=5)
+async def main():
+    aclient = hikv.AsyncClient("http://10.10.10.2:80", "150", "150-150A", timeout=5)
 
-    aclient.System.deviceInfo(method='get')
+    with open('screen.jpg', 'wb') as f:
+        async for chunk in aclient.Streaming.channels[102].picture(method='get', type='opaque_data'):
+            if chunk:
+                f.write(chunk)
 
 
 @bot.message_handler(commands=['help', 'start'])
@@ -64,7 +67,7 @@ async def add_chat(message) -> None:
 
 
 if __name__ == "__main__":
-    print("pda-030720232133 Starting...")
+    print("pda-030720232312 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
@@ -80,7 +83,7 @@ if __name__ == "__main__":
 
     print("Creating threads")
     thread = threading.Thread(target=asyncio.run, args=(bot.polling(),))
-    thread_main = threading.Thread(target=main)
+    thread_main = threading.Thread(target=asyncio.run, args=(main(),))
     print("Starting...")
     thread_main.start()
     thread.start()
