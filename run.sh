@@ -13,5 +13,5 @@ echo "Entered 'venv'."
 echo "Running pip3"
 pip3 install -r requirements.txt
 
-echo "Done, running atpda..."
+echo "Done, running pda..."
 python3 pda

@@ -22,8 +22,11 @@ class EnvironmentError(Exception):
         super().__init__(f'Can`t import global variables. Maybe .env file corrupted or filled incorrectly.')
 
 
-async def main():
-    aclient = hikv.AsyncClient("http://10.10.10.2:80", "150", "150-150A", timeout=5)
+async def main() -> None:
+    try:
+        aclient = hikv.AsyncClient("http://10.10.10.2:80", "150", "150-150A", timeout=5)
+    except:
+        return
 
     with open('screen.jpg', 'wb') as f:
         async for chunk in aclient.Streaming.channels[102].picture(method='get', type='opaque_data'):
@@ -40,19 +43,19 @@ async def send_welcome(message) -> None:
         await bot.reply_to(message, "Если вы видите данное сообщение, значит чат находится в вайтлисте.")
         return
     
-    await bot.reply_to(message, f"Фатальная ошибка: данный чат не добавлен в вайтлист.\nИдентефикатор чата: `{message.chat.id}`\nНапишите @takhiga для добавления в вайтлист.", parse_mode="Markdown")
+    await bot.reply_to(message, f"Данный чат не добавлен в вайтлист - фатальная ошибка.\nИдентефикатор чата: `{message.chat.id}`\nНапишите @takhiga для добавления в вайтлист.", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['addchat'])
 async def add_chat(message) -> None:
     if message.from_user.id in [1202182074]:
-        await bot.reply_to(message, f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата...")
+        msg = await bot.reply_to(message, f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата...")
 
         with open('files/allowed_chats.json', 'r+') as f:
             data = json.load(f)
 
             if message.chat.id in data:
-                await bot.send_message(message.chat.id, "Ошибка: чат уже находится в вайтлисте.")
+                await bot.edit_message_text(f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nОшибка: чат уже находится в вайтлисте.", message.chat.id, msg.id)
                 return
             
             data.append(message.chat.id)
@@ -60,14 +63,14 @@ async def add_chat(message) -> None:
             json.dump(data, f, indent=4, ensure_ascii=False)
             f.truncate()
         
-        await bot.send_message(message.chat.id, "Выполнено.")
+        await bot.edit_message_text(f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата... Выполнено!", message.chat.id, msg.id)
         return
     
     await bot.reply_to(message, "Фатальная ошибка авторизации.")
 
 
 if __name__ == "__main__":
-    print("pda-030720232312 Starting...")
+    print("pda-040720231809 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
