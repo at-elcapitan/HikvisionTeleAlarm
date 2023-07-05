@@ -1,11 +1,13 @@
 import os
+import io
 import json
 import asyncio
 import threading
+from datetime import datetime
 
 import hikvisionapi as hikv
 from dotenv import load_dotenv
-from telebot.async_telebot import AsyncTeleBot
+from telebot import TeleBot
 from telebot import types
 
 # Globals
@@ -14,7 +16,7 @@ TOKEN = os.getenv('TOKEN')
 HOST = os.getenv('HOST')
 LOGIN = os.getenv('LOGIN')
 PASSWD = os.getenv('PASSWD')
-bot = AsyncTeleBot(TOKEN)
+bot = TeleBot(TOKEN)
 
 
 class EnvironmentError(Exception):
@@ -24,38 +26,68 @@ class EnvironmentError(Exception):
 
 async def main() -> None:
     try:
-        aclient = hikv.AsyncClient("http://10.10.10.2:80", "150", "150-150A", timeout=5)
+        aclient = hikv.AsyncClient(HOST, LOGIN, PASSWD)
     except:
         return
+    
+    last = datetime.now()
+    
+    async for event in aclient.Event.notification.alertStream(method='get', type='stream', timeout=None):
+        if event['EventNotificationAlert']['eventDescription'] == 'Motion alarm':
+            print('event')
+            channel = event['EventNotificationAlert']['dynChannelID']
 
-    with open('screen.jpg', 'wb') as f:
-        async for chunk in aclient.Streaming.channels[102].picture(method='get', type='opaque_data'):
-            if chunk:
-                f.write(chunk)
+            if (datetime.now() - last).total_seconds() < 15:
+                continue
+            
+            last = datetime.now()
+            with open('files/channels.json', 'r') as f:
+                data = json.load(f)
+
+            cam_name = data[channel]
+            time = str(datetime.now())[:-7]
+
+            '''with open('screen.jpg', 'wb') as f:
+                async for chunk in aclient.Streaming.channels[int(channel)*100].picture(method='get', type='opaque_data'):
+                    if chunk:
+                        f.write(chunk)
+                
+                photo = f'''
+
+            with open('files/allowed_chats.json', "r") as f:
+                chats = json.load(f)
+
+            '''for chat in chats:
+                bot.send_photo(chat, photo, f"SYSTEM ALERT\nОбнаружено движение на камере: {cam_name}\nВремя: {time}")'''
+            
+            for chat in chats:
+                bot.send_message(chat, f"SYSTEM ALERT\nОбнаружено движение на камере: {cam_name}\nВремя: {time}")
+
+        await asyncio.sleep(1)
 
 
 @bot.message_handler(commands=['help', 'start'])
-async def send_welcome(message) -> None:
+def send_welcome(message) -> None:
     with open('files/allowed_chats.json', "r") as f:
         data = json.load(f)
 
     if message.chat.id in data:
-        await bot.reply_to(message, "Если вы видите данное сообщение, значит чат находится в вайтлисте.")
+        bot.reply_to(message, "Если вы видите данное сообщение, значит чат находится в вайтлисте.")
         return
     
-    await bot.reply_to(message, f"Данный чат не добавлен в вайтлист - фатальная ошибка.\nИдентефикатор чата: `{message.chat.id}`\nНапишите @takhiga для добавления в вайтлист.", parse_mode="Markdown")
+    bot.reply_to(message, f"Данный чат не добавлен в вайтлист - фатальная ошибка.\nИдентефикатор чата: `{message.chat.id}`\nНапишите @takhiga для добавления в вайтлист.", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['addchat'])
-async def add_chat(message) -> None:
+def add_chat(message) -> None:
     if message.from_user.id in [1202182074]:
-        msg = await bot.reply_to(message, f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата...")
+        msg = bot.reply_to(message, f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата...")
 
         with open('files/allowed_chats.json', 'r+') as f:
             data = json.load(f)
 
             if message.chat.id in data:
-                await bot.edit_message_text(f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nОшибка: чат уже находится в вайтлисте.", message.chat.id, msg.id)
+                bot.edit_message_text(f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nОшибка: чат уже находится в вайтлисте.", message.chat.id, msg.id)
                 return
             
             data.append(message.chat.id)
@@ -63,14 +95,14 @@ async def add_chat(message) -> None:
             json.dump(data, f, indent=4, ensure_ascii=False)
             f.truncate()
         
-        await bot.edit_message_text(f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата... Выполнено!", message.chat.id, msg.id)
+        bot.edit_message_text(f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата... Выполнено!", message.chat.id, msg.id)
         return
     
-    await bot.reply_to(message, "Фатальная ошибка авторизации.")
+    bot.reply_to(message, "Фатальная ошибка авторизации.")
 
 
 if __name__ == "__main__":
-    print("pda-040720231809 Starting...")
+    print("pda-v0.1.0 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
@@ -85,7 +117,7 @@ if __name__ == "__main__":
             f.truncate()
 
     print("Creating threads")
-    thread = threading.Thread(target=asyncio.run, args=(bot.polling(),))
+    thread = threading.Thread(target=bot.polling)
     thread_main = threading.Thread(target=asyncio.run, args=(main(),))
     print("Starting...")
     thread_main.start()
