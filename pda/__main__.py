@@ -16,6 +16,7 @@ TOKEN = os.getenv('TOKEN')
 HOST = os.getenv('HOST')
 LOGIN = os.getenv('LOGIN')
 PASSWD = os.getenv('PASSWD')
+TIMEOUT = os.getenv('TIMEOUT')
 bot = TeleBot(TOKEN)
 
 
@@ -29,17 +30,22 @@ async def main() -> None:
         aclient = hikv.AsyncClient(HOST, LOGIN, PASSWD)
     except:
         return
-    
-    last = datetime.now()
-    
+
+    with open('files/camera.json', 'r') as f:
+        time = json.load(f)
+
+    for x in time:
+        time[x] = datetime.now()
+
     async for event in aclient.Event.notification.alertStream(method='get', type='stream', timeout=None):
         if event['EventNotificationAlert']['eventDescription'] == 'Motion alarm':
             channel = event['EventNotificationAlert']['dynChannelID']
 
-            if (datetime.now() - last).total_seconds() < 15:
+            if (datetime.now() - time[channel]).total_seconds() < int(TIMEOUT):
                 continue
             
-            last = datetime.now()
+            time[channel] = datetime.now()
+
             with open('files/camera.json', 'r') as f:
                 data = json.load(f)
             
@@ -48,13 +54,13 @@ async def main() -> None:
             except:
                 cam_name = "Unknown"
 
-            time = str(datetime.now())[:-7]
+            time_str = str(datetime.now())[:-7]
 
             with open('files/chats.json', "r") as f:
                 chats = json.load(f)
             
             for chat in chats:
-                bot.send_message(chat, f"SYSTEM ALERT\nMotion registered on camera `{cam_name}`\nDateTime: {time}", parse_mode='Markdown')
+                bot.send_message(chat, f"SYSTEM ALERT\nMotion registered on camera `{cam_name}`\nDateTime: {time_str}", parse_mode='Markdown')
 
         await asyncio.sleep(1)
 
@@ -125,7 +131,7 @@ def add_admin(message) -> None:
 
 
 if __name__ == "__main__":
-    print("pda-v0.2.0 Starting...")
+    print("pda-v0.2.1 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
