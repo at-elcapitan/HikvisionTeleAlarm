@@ -8,7 +8,7 @@ from datetime import datetime
 import hikvisionapi as hikv
 from dotenv import load_dotenv
 from telebot import TeleBot
-from telebot import types
+#from telebot import types
 
 # Globals
 load_dotenv()
@@ -34,60 +34,44 @@ async def main() -> None:
     
     async for event in aclient.Event.notification.alertStream(method='get', type='stream', timeout=None):
         if event['EventNotificationAlert']['eventDescription'] == 'Motion alarm':
-            print('event')
             channel = event['EventNotificationAlert']['dynChannelID']
 
             if (datetime.now() - last).total_seconds() < 15:
                 continue
             
             last = datetime.now()
-            with open('files/channels.json', 'r') as f:
+            with open('files/camera.json', 'r') as f:
                 data = json.load(f)
+            
+            try:
+                cam_name = data[channel]
+            except:
+                cam_name = "Unknown"
 
-            cam_name = data[channel]
             time = str(datetime.now())[:-7]
 
-            '''with open('screen.jpg', 'wb') as f:
-                async for chunk in aclient.Streaming.channels[int(channel)*100].picture(method='get', type='opaque_data'):
-                    if chunk:
-                        f.write(chunk)
-                
-                photo = f'''
-
-            with open('files/allowed_chats.json', "r") as f:
+            with open('files/chats.json', "r") as f:
                 chats = json.load(f)
-
-            '''for chat in chats:
-                bot.send_photo(chat, photo, f"SYSTEM ALERT\nОбнаружено движение на камере: {cam_name}\nВремя: {time}")'''
             
             for chat in chats:
-                bot.send_message(chat, f"SYSTEM ALERT\nОбнаружено движение на камере: {cam_name}\nВремя: {time}")
+                bot.send_message(chat, f"SYSTEM ALERT\nMotion registered on camera `{cam_name}`\nDateTime: {time}", parse_mode='Markdown')
 
         await asyncio.sleep(1)
 
 
-@bot.message_handler(commands=['help', 'start'])
-def send_welcome(message) -> None:
-    with open('files/allowed_chats.json', "r") as f:
+@bot.message_handler(commands=['init'])
+def add_chat(message) -> None:
+    with open('files/admins.json', "r") as f:
         data = json.load(f)
 
-    if message.chat.id in data:
-        bot.reply_to(message, "Если вы видите данное сообщение, значит чат находится в вайтлисте.")
-        return
-    
-    bot.reply_to(message, f"Данный чат не добавлен в вайтлист - фатальная ошибка.\nИдентефикатор чата: `{message.chat.id}`\nНапишите @takhiga для добавления в вайтлист.", parse_mode="Markdown")
+    if message.from_user.id in data:
+        msg = bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering a chat...")
 
-
-@bot.message_handler(commands=['addchat'])
-def add_chat(message) -> None:
-    if message.from_user.id in [1202182074]:
-        msg = bot.reply_to(message, f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата...")
-
-        with open('files/allowed_chats.json', 'r+') as f:
+        with open('files/chats.json', 'r+') as f:
             data = json.load(f)
 
             if message.chat.id in data:
-                bot.edit_message_text(f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nОшибка: чат уже находится в вайтлисте.", message.chat.id, msg.id)
+                bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError: chat is already in the whitelist", message.chat.id, msg.id)
                 return
             
             data.append(message.chat.id)
@@ -95,23 +79,76 @@ def add_chat(message) -> None:
             json.dump(data, f, indent=4, ensure_ascii=False)
             f.truncate()
         
-        bot.edit_message_text(f"Запрос авторизирован. Добро пожаловать в систему, @{message.from_user.username}\n\nПровожу регистрацию чата... Выполнено!", message.chat.id, msg.id)
+        bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\nRegistering a chat... Done!", message.chat.id, msg.id)
         return
     
-    bot.reply_to(message, "Фатальная ошибка авторизации.")
+    bot.reply_to(message, "Authorization failed.")
+
+
+@bot.message_handler(commands=['getuserid'])
+def get_id(message) -> None:
+    bot.reply_to(message, f"Your id is `{message.from_user.id}`", parse_mode='Markdown')
+
+
+@bot.message_handler(commands=['addadmin'])
+def add_admin(message) -> None:
+    with open('files/admins.json', "r") as f:
+        data = json.load(f)
+
+    admin_id = message.text.split()[1:]
+
+    if message.from_user.id in data:
+        msg = bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering new admin...")
+
+        with open('files/admins.json', 'r+') as f:
+            data = json.load(f)
+
+            try:
+                admin_id = int(admin_id)
+            except:
+                bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError while converting adminID to integer.", message.chat.id, msg.id)
+                return
+
+            if admin_id in data:
+                bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError: admin is already registered.", message.chat.id, msg.id)
+                return
+            
+            data.append(message.chat.id)
+            f.seek(0)
+            json.dump(data, f, indent=4, ensure_ascii=False)
+            f.truncate()
+        
+        bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering admin... Done!", message.chat.id, msg.id)
+        return
+    
+    bot.reply_to(message, "Authorization failed.")
 
 
 if __name__ == "__main__":
-    print("pda-v0.1.0 Starting...")
+    print("pda-v0.2.0 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
     if not os.path.exists('files'):
         os.mkdir('files')
 
-    if not os.path.isfile('files/allowed_chats.json'):
+    if not os.path.isfile('files/chats.json'):
         def_config = []
-        with open('files/allowed_chats.json', 'w') as f:
+        with open('files/chats.json', 'w') as f:
+            f.seek(0)
+            json.dump(def_config, f, indent=4, ensure_ascii=False)
+            f.truncate()
+
+    if not os.path.isfile('files/camera.json'):
+        def_config = {}
+        with open('files/camera.json', 'w') as f:
+            f.seek(0)
+            json.dump(def_config, f, indent=4, ensure_ascii=False)
+            f.truncate()
+
+    if not os.path.isfile('files/admins.json'):
+        def_config = []
+        with open('files/admins.json', 'w') as f:
             f.seek(0)
             json.dump(def_config, f, indent=4, ensure_ascii=False)
             f.truncate()
