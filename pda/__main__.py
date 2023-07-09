@@ -222,13 +222,17 @@ def add_admin(message) -> None:
     with open('files/admins.json', "r+") as f:
         data = json.load(f)
 
-    admin_id = message.text.split()[1:]
-
-    if message.from_user.id in data:
+    if message.from_user.id not in data:
         bot.reply_to(message, "Authorization failed.")
         return
 
     msg = bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering new admin...")
+
+    try:
+        admin_id = message.text.split()[1:][0]
+    except:
+        bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nCan not process empty request.", message.chat.id, msg.id)
+        return
 
     try:
         admin_id = int(admin_id)
@@ -240,16 +244,19 @@ def add_admin(message) -> None:
         bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError: admin is already registered.", message.chat.id, msg.id)
         return
     
-    data.append(message.chat.id)
-    f.seek(0)
-    json.dump(data, f, indent=4, ensure_ascii=False)
-    f.truncate()
+    with open('files/admins.json', "r+") as f:
+        data = json.load(f)
+
+        data.append(admin_id)
+        f.seek(0)
+        json.dump(data, f, indent=4, ensure_ascii=False)
+        f.truncate()
     
     bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering admin... Done!", message.chat.id, msg.id)
 
 
 if __name__ == "__main__":
-    print("pda-v0.3.1 Starting...")
+    print("pda-v0.3.1.1 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
