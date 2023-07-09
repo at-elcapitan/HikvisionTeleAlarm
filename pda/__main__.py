@@ -1,5 +1,4 @@
 import os
-import io
 import json
 import asyncio
 import threading
@@ -9,7 +8,6 @@ import hikvisionapi as hikv
 from dotenv import load_dotenv
 from telebot import TeleBot
 import prettytable as pt
-#from telebot import types
 
 # Globals
 load_dotenv()
@@ -78,7 +76,7 @@ async def main() -> None:
         await asyncio.sleep(1)
 
 
-@bot.message_handler(commands=['cameralist'])
+@bot.message_handler(commands=['list'])
 def camera_list(message):
     with open('files/camera.json', 'r') as f:
         data = json.load(f)
@@ -97,6 +95,23 @@ def camera_list(message):
     table.top_left_junction_char = "┌"
     table.right_padding_width = 2
     table.left_padding_width = 2
+    table.align['ID'] = 'r'
+    table.align['State'] = 'l'
+    table.align['Name'] = 'l'
+
+    for id, camera in data.items():
+        table.add_row([id, "Enabled" if camera[1] else "Disabled", camera[0]])
+
+    bot.reply_to(message, f'<pre>{table}</pre>\n\nIf the table is displayed incorrectly, use the /simplelist.', parse_mode='HTML')
+
+
+@bot.message_handler(commands=['simplelist'])
+def simple_list(message):
+    with open('files/camera.json', 'r') as f:
+        data = json.load(f)
+
+    table = pt.PrettyTable(['ID', 'State', 'Name'])
+    table.border = False
     table.align['ID'] = 'r'
     table.align['State'] = 'l'
     table.align['Name'] = 'l'
@@ -234,7 +249,7 @@ def add_admin(message) -> None:
 
 
 if __name__ == "__main__":
-    print("pda-v0.3.0 Starting...")
+    print("pda-v0.3.1 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
