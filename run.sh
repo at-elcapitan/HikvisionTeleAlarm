@@ -1,4 +1,5 @@
 #! /bin/bash
+set -e
 echo "Checking venv..."
 if [ ! -d "venv" ] 
 then
@@ -8,7 +9,8 @@ fi
 
 echo "Entering venv..."
 source ./venv/bin/activate
-echo "Entered 'venv'."
+
+echo "Entered venv."
 
 echo "Running pip3"
 pip3 install -r requirements.txt
