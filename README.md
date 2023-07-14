@@ -1,23 +1,23 @@
-**PeaceDataBot** is simple bot written on **Python** that uses `telebot` and `hikvisionapi` libs, to chatch motion alerts from camera system and send messages to setted telegram chats or groups.
+**HikvisionTeleAlarm** is simple bot written on **Python** that uses `telebot` and `hikvisionapi` libs, to chatch motion alerts from camera system and send messages to setted telegram chats or groups.
 
 ## Installation
 PeaceDataBot requires `Python 3.10` (using the bot on early versions does not guarantee correct functioning) and created telegram bot using [@BotFather](https://t.me/BotFather).
 
 #### Linux
 ```bash
-git clone https://github.com/at-elcapitan/PeaceDataBot.git
+git clone https://github.com/at-elcapitan/HikvisionTeleAlarm.git
 ```
 or
 ```bash
-wget https://github.com/at-elcapitan/PeaceDataBot/archive/refs/tags/pda-v0.3.1.1.zip && unzip pda-v0.3.1.1.zip && rm pda-v0.3.1.1.zip
+wget https://github.com/at-elcapitan/HikvisionTeleAlarm/archive/refs/tags/pda-v0.3.1.1.zip && unzip pda-v0.3.1.1.zip && rm pda-v0.3.1.1.zip
 ```
 #### Windows
 ```bash
-git clone https://github.com/at-elcapitan/PeaceDataBot.git`
+git clone https://github.com/at-elcapitan/HikvisionTeleAlarm.git`
 ```
 or
 ```bash
-curl -sL "https://github.com/at-elcapitan/PeaceDataBot/archive/refs/tags/pda-v0.3.1.1.zip" -o pda-v0.3.1.1.zip
+curl -sL "https://github.com/at-elcapitan/HikvisionTeleAlarm/archive/refs/tags/pda-v0.3.1.1.zip" -o pda-v0.3.1.1.zip
 ```
 ## Getting started
 Before starting the bot, create a `.env` file according to the template and fill it with your data:
