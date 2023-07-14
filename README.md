@@ -80,14 +80,14 @@ addadmin - <id> Adding new admin to the list [Auth required/Attribute required]
 ```
 
 ## Bot commands
-`/init` - requires admin privileges (user id must be in `admins.json` file), adds chat or group id to `chats.json` file.
+`/init` - requires admin privileges (user id must be in `admins.json` file), adds chat or group id to `chats.json`
 
-`/list` - sending information about all cameras (IDs, isEnabled).
+`/list` - sending information about all cameras (IDs, isEnabled)
 
-`/simplelist` - simple form of `/list` command (w/o borders).
+`/simplelist` - simple form of `/list` command (w/o borders)
 
-`/disablecamera | /enablecamera` - changing isEnabled state of camera.
+`/disablecamera | /enablecamera` - changing isEnabled state of camera
 
-`/getuserid` - sending user ID to chat.
+`/getuserid` - sending user ID to chat
 
-`/addadmin` - adds user id to the `admins.json` file.
+`/addadmin` - adds user id to the `admins.json` file
