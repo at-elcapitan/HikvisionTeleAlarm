@@ -1,7 +1,7 @@
 **HikvisionTeleAlarm** is simple bot written on **Python** that uses `telebot` and `hikvisionapi` libs, to chatch motion alerts from camera system and send messages to setted telegram chats or groups.
 
 ## Installation
-PeaceDataBot requires `Python 3.10` (using the bot on early versions does not guarantee correct functioning) and created telegram bot using [@BotFather](https://t.me/BotFather).
+HikvisionTeleAlarm requires `Python 3.10` (using the bot on early versions does not guarantee correct functioning) and created telegram bot using [@BotFather](https://t.me/BotFather).
 
 #### Linux
 ```bash
