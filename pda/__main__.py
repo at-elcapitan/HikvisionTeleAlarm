@@ -1,12 +1,11 @@
 import os
 import json
 import asyncio
-import threading
 from datetime import datetime
 
 import hikvisionapi as hikv
 from dotenv import load_dotenv
-from telebot import TeleBot
+from telebot.async_telebot import AsyncTeleBot
 import prettytable as pt
 
 # Globals
@@ -16,7 +15,8 @@ HOST = os.getenv('HOST')
 LOGIN = os.getenv('LOGIN')
 PASSWD = os.getenv('PASSWD')
 TIMEOUT = os.getenv('TIMEOUT')
-bot = TeleBot(TOKEN)
+bot = AsyncTeleBot(TOKEN)
+aclient = None
 
 
 class EnvironmentError(Exception):
@@ -30,6 +30,8 @@ class ReadError(Exception):
 
 
 async def main() -> None:
+    global aclient
+
     try:
         aclient = hikv.AsyncClient(HOST, LOGIN, PASSWD)
     except:
@@ -41,7 +43,8 @@ async def main() -> None:
     for x in time:
         time[x] = datetime.now()
 
-    async for event in aclient.Event.notification.alertStream(method='get', type='stream', timeout=None):
+    async for event in aclient.Event.notification.alertStream(method='get', type='stream', timeout=10):
+        print(event)
         if not event['EventNotificationAlert']['eventDescription'] == 'Motion alarm':
             await asyncio.sleep(1)
             continue
@@ -71,13 +74,10 @@ async def main() -> None:
             chats = json.load(f)
         
         for chat in chats:
-            bot.send_message(chat, f"SYSTEM ALERT\nMotion registered on camera `{cam_name}`\nDateTime: {time_str}", parse_mode='Markdown')
-
-        await asyncio.sleep(1)
-
+            await bot.send_message(chat, f"SYSTEM ALERT\nMotion registered on camera `{cam_name}`\nDateTime: {time_str}", parse_mode='Markdown')
 
 @bot.message_handler(commands=['list'])
-def camera_list(message):
+async def camera_list(message):
     with open('files/camera.json', 'r') as f:
         data = json.load(f)
 
@@ -102,11 +102,11 @@ def camera_list(message):
     for id, camera in data.items():
         table.add_row([id, "Enabled" if camera[1] else "Disabled", camera[0]])
 
-    bot.reply_to(message, f'<pre>{table}</pre>\n\nIf the table is displayed incorrectly, use the /simplelist.', parse_mode='HTML')
+    await bot.reply_to(message, f'<pre>{table}</pre>\n\nIf the table is displayed incorrectly, use the /simplelist.', parse_mode='HTML')
 
 
 @bot.message_handler(commands=['simplelist'])
-def simple_list(message):
+async def simple_list(message):
     with open('files/camera.json', 'r') as f:
         data = json.load(f)
 
@@ -119,31 +119,31 @@ def simple_list(message):
     for id, camera in data.items():
         table.add_row([id, "Enabled" if camera[1] else "Disabled", camera[0]])
 
-    bot.reply_to(message, f'<pre>{table}</pre>', parse_mode='HTML')
+    await bot.reply_to(message, f'<pre>{table}</pre>', parse_mode='HTML')
 
 
 @bot.message_handler(commands=['disablecamera'])
-def disable_camera(message):
+async def disable_camera(message):
     with open('files/admins.json', "r") as f:
         data = json.load(f)
 
     if message.from_user.id not in data:
-        bot.reply_to(message, "Authorization failed.")
+        await bot.reply_to(message, "Authorization failed.")
         return
 
-    msg = bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera...")
+    msg = await bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera...")
 
     try:
         cameraid = message.text.split()[1:][0]
     except:
-        bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera... Attribute required!", message.chat.id, msg.id)
+        await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera... Error - Attribute required!", message.chat.id, msg.id)
         return
 
     with open('files/camera.json', 'r+') as f:
         data = json.load(f)
 
         if cameraid not in data:
-            bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera... Error! Camera not found.", message.chat.id, msg.id)
+            await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera... Error - Camera not found.", message.chat.id, msg.id)
             return
 
         data[cameraid][1] = False
@@ -151,31 +151,31 @@ def disable_camera(message):
         json.dump(data, f, indent=4, ensure_ascii=False)
         f.truncate()
 
-    bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera... Done!", message.chat.id, msg.id)
+    await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera... Done!", message.chat.id, msg.id)
 
 
 @bot.message_handler(commands=['enablecamera'])
-def disable_camera(message):
+async def disable_camera(message):
     with open('files/admins.json', "r") as f:
         data = json.load(f)
 
     if message.from_user.id not in data:
-        bot.reply_to(message, "Authorization failed.")
+        await bot.reply_to(message, "Authorization failed.")
         return
 
-    msg = bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nEnabling camera...")
+    msg = await bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nEnabling camera...")
 
     try:
         cameraid = message.text.split()[1:][0]
     except:
-        bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera... Attribute required!", message.chat.id, msg.id)
+        await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nDisabling camera... Error - Attribute required!", message.chat.id, msg.id)
         return
 
     with open('files/camera.json', 'r+') as f:
         data = json.load(f)
 
         if cameraid not in data:
-            bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nEnabling camera... Error! Camera not found.", message.chat.id, msg.id)
+            await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nEnabling camera... Error - Camera not found.", message.chat.id, msg.id)
             return
         
         data[cameraid][1] = True
@@ -183,25 +183,25 @@ def disable_camera(message):
         json.dump(data, f, indent=4, ensure_ascii=False)
         f.truncate()
 
-    bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nEnabling camera... Done!", message.chat.id, msg.id)
+    await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nEnabling camera... Done!", message.chat.id, msg.id)
 
 
 @bot.message_handler(commands=['init'])
-def add_chat(message) -> None:
+async def add_chat(message) -> None:
     with open('files/admins.json', "r") as f:
         data = json.load(f)
 
     if message.from_user.id not in data:
-        bot.reply_to(message, "Authorization failed.")
+        await bot.reply_to(message, "Authorization failed.")
         return
 
-    msg = bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering a chat...")
+    msg = await bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering a chat...")
 
     with open('files/chats.json', 'r+') as f:
         data = json.load(f)
 
         if message.chat.id in data:
-            bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError: chat is already in the whitelist", message.chat.id, msg.id)
+            await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError: chat is already in the whitelist", message.chat.id, msg.id)
             return
         
         data.append(message.chat.id)
@@ -209,39 +209,39 @@ def add_chat(message) -> None:
         json.dump(data, f, indent=4, ensure_ascii=False)
         f.truncate()
     
-    bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering a chat... Done!", message.chat.id, msg.id)
+    await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering a chat... Done!", message.chat.id, msg.id)
     
 
 @bot.message_handler(commands=['getuserid'])
-def get_id(message) -> None:
-    bot.reply_to(message, f"Your id is `{message.from_user.id}`", parse_mode='Markdown')
+async def get_id(message) -> None:
+    await bot.reply_to(message, f"Your id is `{message.from_user.id}`", parse_mode='Markdown')
 
 
 @bot.message_handler(commands=['addadmin'])
-def add_admin(message) -> None:
+async def add_admin(message) -> None:
     with open('files/admins.json', "r+") as f:
         data = json.load(f)
 
     if message.from_user.id not in data:
-        bot.reply_to(message, "Authorization failed.")
+        await bot.reply_to(message, "Authorization failed.")
         return
 
-    msg = bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering new admin...")
+    msg = await bot.reply_to(message, f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering new admin...")
 
     try:
         admin_id = message.text.split()[1:][0]
     except:
-        bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nCan not process empty request.", message.chat.id, msg.id)
+        await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nCan not process empty request.", message.chat.id, msg.id)
         return
 
     try:
         admin_id = int(admin_id)
     except:
-        bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError while converting adminID to integer.", message.chat.id, msg.id)
+        await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError while converting adminID to integer.", message.chat.id, msg.id)
         return
 
     if admin_id in data:
-        bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError: admin is already registered.", message.chat.id, msg.id)
+        await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nError: admin is already registered.", message.chat.id, msg.id)
         return
     
     with open('files/admins.json', "r+") as f:
@@ -252,11 +252,20 @@ def add_admin(message) -> None:
         json.dump(data, f, indent=4, ensure_ascii=False)
         f.truncate()
     
-    bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering admin... Done!", message.chat.id, msg.id)
+    await bot.edit_message_text(f"The request is authorized. Welcome to the system, @{message.from_user.username}\n\nRegistering admin... Done!", message.chat.id, msg.id)
+
+
+async def run_bot():
+    while True:
+        try:
+            await bot.polling()
+        except Exception as e:
+            print(f"Error: {e}")
+            await asyncio.sleep(5)
 
 
 if __name__ == "__main__":
-    print("pda-v0.3.1.1 Starting...")
+    print("pda-v0.3.1.2 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
@@ -284,12 +293,6 @@ if __name__ == "__main__":
             json.dump(def_config, f, indent=4, ensure_ascii=False)
             f.truncate()
 
-    print("Creating threads")
-    thread = threading.Thread(target=bot.polling)
-    thread_main = threading.Thread(target=asyncio.run, args=(main(),))
-    print("Starting...")
-    thread_main.start()
-    thread.start()
-    print("Started.")
-    thread_main.join()
-    thread.join()
+    loop = asyncio.get_event_loop()
+    tasks = asyncio.gather(main(), run_bot())
+    loop.run_until_complete(tasks)
