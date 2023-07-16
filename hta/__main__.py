@@ -44,7 +44,6 @@ async def main() -> None:
         time[x] = datetime.now()
 
     async for event in aclient.Event.notification.alertStream(method='get', type='stream', timeout=10):
-        print(event)
         if not event['EventNotificationAlert']['eventDescription'] == 'Motion alarm':
             await asyncio.sleep(1)
             continue
