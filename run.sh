@@ -17,5 +17,5 @@ source ./venv/bin/activate
 echo "Executing: pip insrall -r requirements.txt"
 python3 -m pip install -r requirements.txt
 
-echo "Starting pda"
+echo "Starting hta"
 python3 hta

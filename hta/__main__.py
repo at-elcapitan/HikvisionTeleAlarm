@@ -1,7 +1,9 @@
 import os
 import json
 import asyncio
+from io import BytesIO
 from datetime import datetime
+
 
 import hikvisionapi as hikv
 from dotenv import load_dotenv
@@ -45,10 +47,17 @@ async def main() -> None:
 
     async for event in aclient.Event.notification.alertStream(method='get', type='stream', timeout=10):
         if not event['EventNotificationAlert']['eventDescription'] == 'Motion alarm':
-            await asyncio.sleep(1)
             continue
-
+        
         channel = event['EventNotificationAlert']['dynChannelID']
+        chan_i = int(channel) * 100
+        image = BytesIO()
+
+        async for chunk in aclient.Streaming.channels[chan_i].picture(method='get', type='opaque_data'):
+            if chunk:
+                image.write(chunk)
+        
+        image.seek(0)
 
         with open('files/camera.json', 'r') as f:
             data = json.load(f)
@@ -71,9 +80,34 @@ async def main() -> None:
 
         with open('files/chats.json', "r") as f:
             chats = json.load(f)
-        
+
         for chat in chats:
-            await bot.send_message(chat, f"SYSTEM ALERT\nMotion registered on camera `{cam_name}`\nDateTime: {time_str}", parse_mode='Markdown')
+            await bot.send_photo(chat, image, f"SYSTEM ALERT\nMotion registered on camera `{cam_name}`\nDateTime: {time_str}", parse_mode='Markdown')
+
+
+@bot.message_handler(commands=["image"])
+async def get_image(message):
+    try:
+        channel_id = int(message.text.split()[1:][0])
+    except:
+        await bot.reply_to(message, "Can not process empty request.")
+        return
+    
+    with open('files/camera.json', 'r+') as f:
+        data = json.load(f)
+
+        if str(channel_id) not in data:
+            await bot.reply_to(message, f"Error: Camera not found.")
+        
+    image = BytesIO()
+
+    async for chunk in aclient.Streaming.channels[channel_id*100].picture(method='get', type='opaque_data'):
+        if chunk:
+            image.write(chunk)
+
+    image.seek(0)
+    await bot.send_photo(message.chat.id, image, caption=f"@{message.from_user.username}\nCamera: {data[str(channel_id)][0]}\nID: {channel_id}")
+    
 
 @bot.message_handler(commands=['list'])
 async def camera_list(message):
@@ -264,7 +298,7 @@ async def run_bot():
 
 
 if __name__ == "__main__":
-    print("hta-v0.3.1.2 Starting...")
+    print("hta-v0.4 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
