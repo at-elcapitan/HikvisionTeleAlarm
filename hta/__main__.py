@@ -298,7 +298,7 @@ async def run_bot():
 
 
 if __name__ == "__main__":
-    print("hta-v0.4 Starting...")
+    print("hta-v1.0 Starting...")
     if TOKEN is None or PASSWD is None or HOST is None or LOGIN is None:
         raise EnvironmentError
 
