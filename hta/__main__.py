@@ -69,7 +69,7 @@ async def main() -> None:
             raise ReadError('camera.json')
 
         if not cam_enable:
-            return
+            continue
 
         if (datetime.now() - time[channel]).total_seconds() < int(TIMEOUT):
             continue
