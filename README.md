@@ -1,7 +1,7 @@
-**HikvisionTeleAlarm** is simple bot written on **Python** that uses `telebot` and `hikvisionapi` libs, to chatch motion alerts from camera system and send messages to setted telegram chats or groups.
+**HikvisionTeleAlarm** is a simple bot written on **Python** that uses `telebot` and `hikvisionapi` libs, to catch motion alerts from the camera system and send messages to set telegram chats or groups.
 
 ## Installation
-HikvisionTeleAlarm requires `Python 3.10` (using the bot on early versions does not guarantee correct functioning) and created telegram bot using [@BotFather](https://t.me/BotFather).
+HikvisionTeleAlarm requires `Python 3.10` (using the bot on early versions does not guarantee correct functioning) and created a telegram bot using [@BotFather](https://t.me/BotFather).
 
 #### Linux
 ```bash
@@ -49,7 +49,7 @@ Copy your user id and paste it to `admins.json` file. Example:
 ]
 ```
 
-Change `camera.json` file using template:
+Change the `camera.json` file using the template:
 > ID - camera ID in HIKVISION system (must be an integer placed in "")
 > 
 > name - displaying name
