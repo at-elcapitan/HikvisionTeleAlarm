@@ -1,0 +1,11 @@
+version: "v1.0.1"
+
+services:
+  bot:
+    restart: unless-stopped
+    image: hta:latest
+    container_name: hta
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    command: python hta
