@@ -1,6 +1,6 @@
 FROM python:3.10-alpine
 WORKDIR /dockerimage
-RUN apk add --no-cache gcc
+RUN apk add --no-cache gcc musl-dev linux-headers
 COPY requirements.txt requirements.txt
 COPY files/ files/
 RUN pip install -r requirements.txt
