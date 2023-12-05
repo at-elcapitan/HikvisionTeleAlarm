@@ -1,6 +1,7 @@
 FROM python:3.10-alpine
 WORKDIR /dockerimage
 COPY requirements.txt requirements.txt
+COPY files/ files/
 RUN pip install -r requirements.txt
 ENV TZ=Europe/Kyiv
 COPY .env .env
